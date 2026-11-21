@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Registered Account - Debug</title>
+  <script>
+    // This will run in the browser and log to console
+    console.log('=== Checking localStorage for registered user ===');
+    const key = 'medicinefinder_mock_registered_user';
+    const raw = localStorage.getItem(key);
+    console.log('Raw localStorage data:', raw);
+    
+    if (raw) {
+      try {
+        const user = JSON.parse(raw);
+        console.log('Parsed user:', user);
+        console.log('Email:', user.email);
+        console.log('UID:', user.uid);
+        console.log('Display Name:', user.displayName);
+      } catch (e) {
+        console.error('Parse error:', e);
+      }
+    } else {
+      console.log('No registered user found in localStorage');
+    }
+    
+    // Also check pharmacies and medicines
+    const phRaw = localStorage.getItem('medicinefinder_db_pharmacies');
+    console.log('Pharmacies count:', phRaw ? JSON.parse(phRaw).length : 0);
+    if (phRaw) {
+      console.log('Pharmacies:', JSON.parse(phRaw).map(p => ({ id: p.id, name: p.name, ownerId: p.ownerId })));
+    }
+    
+    const medRaw = localStorage.getItem('medicinefinder_db_medicines');
+    console.log('Medicines count:', medRaw ? JSON.parse(medRaw).length : 0);
+    if (medRaw) {
+      console.log('Medicines:', JSON.parse(medRaw).map(m => ({ id: m.id, name: m.name, ownerId: m.ownerId })));
+    }
+  </script>
+</head>
+<body>
+  <h1>Check console for account details</h1>
+  <p>Open DevTools (F12) > Console to see the registered account information.</p>
+</body>
+</html>

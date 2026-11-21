@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check Registered Account</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 24px; max-width: 800px; margin: 0 auto; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .label { font-weight: 600; color: #475569; font-size: 14px; }
+    .value { font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; }
+    .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; }
+    .btn-danger { background: #ef4444; color: white; }
+    .btn-secondary { background: #e2e8f0; color: #1e293b; margin-right: 8px; }
+  </style>
+</head>
+<body>
+  <h1>Registered Pharmacy Owner Account</h1>
+  <div id="output"></div>
+  <button class="btn btn-danger" onclick="deleteAccount()">Delete This Account Permanently</button>
+  <button class="btn btn-secondary" onclick="window.location.href='/'">Cancel - Go to App</button>
+
+  <script>
+    const key = 'medicinefinder_mock_registered_user';
+    const raw = localStorage.getItem(key);
+    const output = document.getElementById('output');
+    
+    if (!raw) {
+      output.innerHTML = '<div class="card"><p>No registered pharmacy owner account found in localStorage.</p></div>';
+    } else {
+      try {
+        const user = JSON.parse(raw);
+        output.innerHTML = `
+          <div class="card">
+            <h2>Account Found - Ready for Deletion</h2>
+            <div style="margin-top: 16px;">
+              <div class="label">Email:</div>
+              <div class="value">${user.email}</div>
+            </div>
+            <div style="margin-top: 12px;">
+              <div class="label">Display Name:</div>
+              <div class="value">${user.displayName}</div>
+            </div>
+            <div style="margin-top: 12px;">
+              <div class="label">UID:</div>
+              <div class="value">${user.uid}</div>
+            </div>
+            <div style="margin-top: 12px;">
+              <div class="label">Is Mock:</div>
+              <div class="value">${user.isMock}</div>
+            </div>
+            <div style="margin-top: 12px;">
+              <div class="label">Password (stored in plaintext for demo):</div>
+              <div class="value">${user.password || '(not stored)'}</div>
+            </div>
+          </div>
+          
+          <div class="card">
+            <h3>Associated Data to Also Delete:</h3>
+            <ul>
+              <li>Pharmacy profile (where ownerId = ${user.uid})</li>
+              <li>All medicine/inventory records (where ownerId = ${user.uid})</li>
+            </ul>
+            <p><strong>This action is irreversible.</strong> Demo pharmacies (pharmacy-1 through pharmacy-4) and their medicines will be preserved.</p>
+          </div>
+        `;
+        
+        window.targetUser = user;
+      } catch (e) {
+        output.innerHTML = '<div class="card"><p>Error parsing stored data: ' + e.message + '</p></div>';
+      }
+    }
+    
+    async function deleteAccount() {
+      if (!window.targetUser) return;
+      
+      if (!confirm('PERMANENTLY delete this pharmacy owner account and all associated data? This cannot be undone.')) {
+        return;
+      }
+      
+      // Delete registered user
+      localStorage.removeItem('medicinefinder_mock_registered_user');
+      
+      // Delete active session if it matches
+      const sessionRaw = localStorage.getItem('medicinefinder_mock_user');
+      if (sessionRaw) {
+        try {
+          const session = JSON.parse(sessionRaw);
+          if (session.uid === window.targetUser.uid) {
+            localStorage.removeItem('medicinefinder_mock_user');
+          }
+        } catch {}
+      }
+      
+      // Find and delete pharmacy profile
+      const pharmaciesRaw = localStorage.getItem('medicinefinder_db_pharmacies');
+      if (pharmaciesRaw) {
+        try {
+          const pharmacies = JSON.parse(pharmaciesRaw);
+          const filtered = pharmacies.filter(p => p.ownerId !== window.targetUser.uid);
+          localStorage.setItem('medicinefinder_db_pharmacies', JSON.stringify(filtered));
+        } catch {}
+      }
+      
+      // Find and delete medicines
+      const medicinesRaw = localStorage.getItem('medicinefinder_db_medicines');
+      if (medicinesRaw) {
+        try {
+          const medicines = JSON.parse(medicinesRaw);
+          const filtered = medicines.filter(m => m.ownerId !== window.targetUser.uid);
+          localStorage.setItem('medicinefinder_db_medicines', JSON.stringify(filtered));
+        } catch {}
+      }
+      
+      alert('Account and associated data permanently deleted.');
+      window.location.href = '/';
+    }
+  </script>
+</body>
+</html>
